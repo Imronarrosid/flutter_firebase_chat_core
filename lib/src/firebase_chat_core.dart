@@ -277,15 +277,15 @@ class FirebaseChatCore {
         );
   }
 
-  Future<types.Message> getLastMessages(types.Room room) async {
+  Future<Stream<types.Message>> getLastMessages(types.Room room) async {
     final query = getFirebaseFirestore()
         .collection('${config.roomsCollectionName}/${room.id}/messages')
         .orderBy('createdAt', descending: true);
 
-    final QuerySnapshot querySnapshot = await query.limit(1).get();
-    return types.Message.fromJson(
-      querySnapshot.docs.first.data() as Map<String, dynamic>,
-    );
+    return query
+        .limit(1)
+        .snapshots()
+        .map((event) => types.Message.fromJson(event.docs.first.data()));
   }
 
   /// Returns a stream of changes in a room from Firebase.
