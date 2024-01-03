@@ -277,15 +277,30 @@ class FirebaseChatCore {
         );
   }
 
-  Stream<types.Message> getLastMessages(types.Room room) {
+  Stream<List<types.Message>> getLastMessages(types.Room room) {
     final query = getFirebaseFirestore()
         .collection('${config.roomsCollectionName}/${room.id}/messages')
         .orderBy('createdAt', descending: true);
 
-    return query
-        .limit(1)
-        .snapshots()
-        .map((event) => types.Message.fromJson(event.docs.first.data()));
+    return query.limit(1).snapshots().map(
+          (snapshot) => snapshot.docs.fold<List<types.Message>>(
+            [],
+            (previousValue, doc) {
+              final data = doc.data();
+              final author = room.users.firstWhere(
+                (u) => u.id == data['authorId'],
+                orElse: () => types.User(id: data['authorId'] as String),
+              );
+
+              data['author'] = author.toJson();
+              data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
+              data['id'] = doc.id;
+              data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+
+              return [...previousValue, types.Message.fromJson(data)];
+            },
+          ),
+        );
   }
 
   /// Returns a stream of changes in a room from Firebase.
