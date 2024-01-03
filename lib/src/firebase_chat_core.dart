@@ -277,7 +277,7 @@ class FirebaseChatCore {
         );
   }
 
-  Future<Stream<types.Message>> getLastMessages(types.Room room) async {
+  Stream<types.Message> getLastMessages(types.Room room) {
     final query = getFirebaseFirestore()
         .collection('${config.roomsCollectionName}/${room.id}/messages')
         .orderBy('createdAt', descending: true);
